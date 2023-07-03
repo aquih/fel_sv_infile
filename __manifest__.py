@@ -1,13 +1,13 @@
 # -*- encoding: utf-8 -*-
 
 {
-    'name': 'FEL Infile',
+    'name': 'FEL El Salvador Infile',
     'version': '1.1',
     'category': 'Custom',
     'description': """ Integración con factura electrónica de Infile """,
     'author': 'aquíH',
     'website': 'http://aquih.com/',
-    'depends': ['fel_gt'],
+    'depends': ['fel_sv'],
     'data': [
         'views/account_view.xml',
     ],

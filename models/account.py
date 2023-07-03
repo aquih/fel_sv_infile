@@ -60,6 +60,7 @@ class AccountInvoice(models.Model):
                         'descripcion': linea.name,
                         'precio_unitario': linea.price_unit,
                     }
+                    items.append(item)
                 
                 factura_json['documento']['items'] = items
                 logging.warning(factura_json)                
@@ -70,6 +71,7 @@ class AccountInvoice(models.Model):
                     "llave": factura.company_id.llave_fel_sv,
                     "identificador": factura.journal_id.code+str(factura.id),
                 }
+                logging.warning(headers)
                 r = requests.post('https://certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar', json=factura_json, headers=headers)
                 logging.warning(r.text)
                 certificacion_json = r.json()
@@ -78,7 +80,7 @@ class AccountInvoice(models.Model):
                     factura.pdf_fel_sv = certificacion_json["pdf_path"]
                     factura.certificador_fel_sv = "infile_sv"
                 else:
-                    factura.error_certificador(str(certificacion_json["descripcion_errores"]))
+                    factura.error_certificador(str(certificacion_json["errores"]))
                     return False
 
         return True
@@ -155,4 +157,4 @@ class ResCompany(models.Model):
 
     usuario_fel_sv = fields.Char('Usuario FEL')
     llave_fel_sv = fields.Char('Clave FEL')
-    certificador_fel = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
+    certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
