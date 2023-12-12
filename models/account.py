@@ -15,15 +15,15 @@ class AccountInvoice(models.Model):
     pdf_fel_sv = fields.Char('PDF FEL SV', copy=False)
     
     def invoice_validate(self):
-        if self.certificar():
+        if self.certificar_sv():
             return super(AccountInvoice, self).invoice_validate()
     
-    def certificar(self):
+    def certificar_sv(self):
         for factura in self:
-            if factura.requiere_certificacion('infile_sv'):
+            if factura.requiere_certificacion_sv('infile_sv'):
                 self.ensure_one()
 
-                if factura.error_pre_validacion():
+                if factura.error_pre_validacion_sv():
                     return False
             
                 factura_json = { 'documento': {
@@ -100,7 +100,7 @@ class AccountInvoice(models.Model):
                     factura.pdf_fel_sv = certificacion_json["pdf_path"]
                     factura.certificador_fel_sv = "infile_sv"
                 else:
-                    factura.error_certificador(str(certificacion_json["errores"]))
+                    factura.error_certificador_sv(str(certificacion_json["errores"]))
                     return False
 
         return True
@@ -108,7 +108,7 @@ class AccountInvoice(models.Model):
     def action_cancel(self):
         result = super(AccountInvoice, self).action_cancel()
         for factura in self:
-            if factura.requiere_certificacion() and factura.firma_fel_sv:
+            if factura.requiere_certificacion_sv('infile_sv') and factura.firma_fel_sv:
                                     
                 invalidacion_json = { 'documento': {
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
