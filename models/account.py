@@ -25,19 +25,21 @@ class AccountInvoice(models.Model):
 
                 if factura.error_pre_validacion_sv():
                     return False
+
+                tipo_documento = factura.journal_id.tipo_documento_fel_sv.zfill(2)
             
                 factura_json = { 'documento': {
-                    'tipo_dte': factura.journal_id.tipo_documento_fel_sv,
+                    'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
                 }}
                 
                 incluir_impuestos = True
-                if factura.journal_id.tipo_documento_fel_sv == '01':
+                if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(factura.condicion_pago_fel_sv)
                     if factura.condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': factura.forma_pago_fel_sv, 'monto': factura.amount_total }]
 
-                if factura.journal_id.tipo_documento_fel_sv == '03':
+                if tipo_documento == '03':
                     incluir_impuestos = False
                     factura_json['documento']['condicion_pago'] = int(factura.condicion_pago_fel_sv)
                     if factura.condicion_pago_fel_sv == '1':
@@ -72,7 +74,7 @@ class AccountInvoice(models.Model):
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
-                        'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv,
+                        'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
                         'descuento': linea.discount,
                         'descripcion': linea.name,
                         'precio_unitario': precio_unitario,
@@ -128,10 +130,10 @@ class AccountInvoice(models.Model):
                     }
                 }}
                 
-                if factura.journal_id.tipo_documento_fel_sv == '1':
+                if tipo_documento == '01':
                     invalidacion_json['documento']['condicion_pago'] = factura.condicion_pago_fel_sv
 
-                if factura.journal_id.tipo_documento_fel_sv == '3':
+                if tipo_documento == '03':
                     invalidacion_json['documento']['condicion_pago'] = factura.condicion_pago_fel_sv
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
@@ -153,7 +155,7 @@ class AccountInvoice(models.Model):
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
-                        'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv,
+                        'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
                         'descuento': linea.discount,
                         'descripcion': linea.name,
                         'precio_unitario': linea.price_unit,
