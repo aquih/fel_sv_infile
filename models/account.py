@@ -75,7 +75,7 @@ class AccountInvoice(models.Model):
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
                         'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
-                        'descuento': linea.discount,
+                        'descuento': linea.price_total * (100 - linea.discount) / 100,
                         'descripcion': linea.name,
                         'precio_unitario': precio_unitario,
                     }
