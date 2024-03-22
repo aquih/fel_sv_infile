@@ -32,18 +32,21 @@ class AccountInvoice(models.Model):
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
                 }}
+
+                condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
+                forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
                 
                 incluir_impuestos = True
                 if tipo_documento == '01':
-                    factura_json['documento']['condicion_pago'] = int(factura.condicion_pago_fel_sv)
-                    if factura.condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': factura.forma_pago_fel_sv, 'monto': factura.amount_total }]
+                    factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
+                    if condicion_pago_fel_sv == '1':
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': 0 }]
 
                 if tipo_documento == '03':
                     incluir_impuestos = False
-                    factura_json['documento']['condicion_pago'] = int(factura.condicion_pago_fel_sv)
-                    if factura.condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': factura.forma_pago_fel_sv, 'monto': factura.amount_total }]
+                    factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
+                    if condicion_pago_fel_sv == '1':
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': 0 }]
                     
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
@@ -129,12 +132,14 @@ class AccountInvoice(models.Model):
                         'numero_documento': factura.solicitante_fel_sv_id.vat,
                     }
                 }}
+
+                condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 
                 if tipo_documento == '01':
-                    invalidacion_json['documento']['condicion_pago'] = factura.condicion_pago_fel_sv
+                    invalidacion_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
 
                 if tipo_documento == '03':
-                    invalidacion_json['documento']['condicion_pago'] = factura.condicion_pago_fel_sv
+                    invalidacion_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
                         'numero_documento': factura.partner_id.vat,
