@@ -53,7 +53,7 @@ class AccountInvoice(models.Model):
                         'numero_documento': factura.partner_id.vat,
                         'nrc': factura.partner_id.numero_registro,
                         'nombre': factura.partner_id.name,
-                        'codigo_actividad': factura.partner_id.giro_negocio_id.name,
+                        'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
                         'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
                         'correo': factura.partner_id.email,
                         'direccion': {
@@ -145,7 +145,7 @@ class AccountInvoice(models.Model):
                         'numero_documento': factura.partner_id.vat,
                         'nrc': factura.partner_id.numero_registro,
                         'nombre': factura.partner_id.name,
-                        'codigo_actividad': factura.partner_id.giro_negocio_id.name,
+                        'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
                         'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
                         'direccion': {
                             'departamento': factura.partner_id.departamento_fel_sv,
