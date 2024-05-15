@@ -40,13 +40,13 @@ class AccountInvoice(models.Model):
                 if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': 0 }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': factura.amount_total }]
 
                 if tipo_documento == '03':
                     incluir_impuestos = False
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': 0 }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': factura.amount_total }]
                     
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
@@ -78,7 +78,7 @@ class AccountInvoice(models.Model):
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': linea.price_total * (100 - linea.discount) / 100,
+                        'descuento': linea.price_total * linea.discount / 100,
                         'descripcion': linea.name,
                         'precio_unitario': precio_unitario,
                     }
@@ -161,7 +161,7 @@ class AccountInvoice(models.Model):
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
                         'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
-                        'descuento': linea.discount,
+                        'descuento': linea.price_total * linea.discount / 100,
                         'descripcion': linea.name,
                         'precio_unitario': linea.price_unit,
                     }
