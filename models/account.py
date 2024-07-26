@@ -71,16 +71,21 @@ class AccountInvoice(models.Model):
                     if not incluir_impuestos and len(linea.invoice_line_tax_ids) > 0:
                         r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         precio_unitario = r['base']
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
+
+                        # Para calcular los impuestos, es necesario quitar el descuento y tomar en cuenta todas las cantidades
+                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['base']
                            
+                    logging.warning(linea.price_total)
+                    logging.warning(linea.discount)
+                    logging.warning(linea.discount / 100.0)
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
-                        'cantidad': linea.quantity,
+                        'cantidad': float('{:.8f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': linea.price_total * linea.discount / 100,
+                        'descuento': float('{:.8f}'.format(precio_unitario * linea.quantity * linea.discount / 100.0)),
                         'descripcion': linea.name,
-                        'precio_unitario': precio_unitario,
+                        'precio_unitario': float('{:.8f}'.format(precio_unitario)),
                     }
                     if not incluir_impuestos:
                         item['tributos'] = [{ 'codigo': '20', 'monto': impuestos }]
@@ -161,7 +166,7 @@ class AccountInvoice(models.Model):
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': linea.quantity,
                         'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
-                        'descuento': linea.price_total * linea.discount / 100,
+                        'descuento': linea.price_total * linea.discount / 100.0,
                         'descripcion': linea.name,
                         'precio_unitario': linea.price_unit,
                     }
@@ -185,3 +190,9 @@ class ResCompany(models.Model):
     usuario_fel_sv = fields.Char('Usuario FEL')
     llave_fel_sv = fields.Char('Clave FEL')
     certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
+
+class PosOrder(models.Model):
+    _inherit = "pos.order"
+
+    firma_fel_sv = fields.Char('Firma FEL SV', related='invoice_id.firma_fel_sv')
+    pdf_fel_sv = fields.Char('PDF FEL SV', related='invoice_id.pdf_fel_sv')
