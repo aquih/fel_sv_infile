@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from odoo import models, fields, api, _
+from odoo import models, fields, api, tools, _
 from odoo.exceptions import UserError, ValidationError
 
 import base64
@@ -42,7 +42,7 @@ class AccountInvoice(models.Model):
                     if condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': factura.amount_total }]
 
-                if tipo_documento == '03':
+                if tipo_documento in ['03', '04']:
                     incluir_impuestos = False
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
@@ -60,7 +60,8 @@ class AccountInvoice(models.Model):
                             'departamento': factura.partner_id.departamento_fel_sv,
                             'municipio': factura.partner_id.municipio_fel_sv,
                             'complemento': factura.partner_id.street or '',
-                        }
+                        },
+                        'telefono': factura.partner_id.phone,
                     }
                     factura_json['documento']['receptor'] = receptor
 
@@ -76,16 +77,15 @@ class AccountInvoice(models.Model):
                         r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['base']
                            
-                    logging.warning(linea.price_total)
-                    logging.warning(linea.discount)
-                    logging.warning(linea.discount / 100.0)
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': float('{:.8f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': float('{:.8f}'.format(precio_unitario * linea.quantity * linea.discount / 100.0)),
+                        #'descuento': float('{:.8f}'.format(precio_unitario * linea.quantity * linea.discount / 100.0)),
+                        'descuento': tools.float_round(precio_unitario * linea.quantity * linea.discount / 100.0, precision_rounding=factura.currency_id.rounding),
                         'descripcion': linea.name,
-                        'precio_unitario': float('{:.8f}'.format(precio_unitario)),
+                        #'precio_unitario': float('{:.8f}'.format(precio_unitario)),
+                        'precio_unitario': tools.float_round(precio_unitario, precision_rounding=factura.currency_id.rounding),
                     }
                     if not incluir_impuestos:
                         item['tributos'] = [{ 'codigo': '20', 'monto': impuestos }]
@@ -102,7 +102,11 @@ class AccountInvoice(models.Model):
                     "identificador": factura.journal_id.code+str(factura.id),
                 }
                 logging.warning(headers)
-                r = requests.post('https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar', json=factura_json, headers=headers)
+                url = 'https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar' 
+                if factura.company_id.pruebas_fel_sv:
+                    url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar'
+                r = requests.post(url, json=factura_json, headers=headers)
+
                 logging.warning(r.text)
                 certificacion_json = r.json()
                 if certificacion_json["ok"]:
@@ -178,7 +182,11 @@ class AccountInvoice(models.Model):
                     "usuario": factura.company_id.usuario_fel_sv,
                     "llave": factura.company_id.llave_fel_sv,
                 }
-                r = requests.post('https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion', json=invalidacion_json, headers=headers)
+                url = 'https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion'
+                if factura.company_id.pruebas_fel_sv:
+                    url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion'
+                r = requests.post(url, json=invalidacion_json, headers=headers)
+
                 logging.warning(r.text)
                 certificacion_json = r.json()
                 if not certificacion_json["ok"]:
@@ -190,6 +198,7 @@ class ResCompany(models.Model):
     usuario_fel_sv = fields.Char('Usuario FEL')
     llave_fel_sv = fields.Char('Clave FEL')
     certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
+    pruebas_fel_sv = fields.Boolean('Pruebas FEL')
 
 class PosOrder(models.Model):
     _inherit = "pos.order"
