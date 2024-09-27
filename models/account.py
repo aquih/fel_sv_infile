@@ -3,14 +3,12 @@
 from odoo import models, fields, api, tools, _
 from odoo.exceptions import UserError, ValidationError
 
-import base64
 import requests
-
 import logging
 import json
 
-class AccountInvoice(models.Model):
-    _inherit = "account.invoice"
+class AccountMove(models.Model):
+    _inherit = "account.move"
 
     pdf_fel_sv = fields.Char('PDF FEL SV', copy=False)
     
@@ -199,9 +197,3 @@ class ResCompany(models.Model):
     llave_fel_sv = fields.Char('Clave FEL')
     certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
     pruebas_fel_sv = fields.Boolean('Pruebas FEL')
-
-class PosOrder(models.Model):
-    _inherit = "pos.order"
-
-    firma_fel_sv = fields.Char('Firma FEL SV', related='invoice_id.firma_fel_sv')
-    pdf_fel_sv = fields.Char('PDF FEL SV', related='invoice_id.pdf_fel_sv')
