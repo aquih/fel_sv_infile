@@ -15,7 +15,10 @@ class AccountMove(models.Model):
     def invoice_validate(self):
         if self.certificar_sv():
             return super(AccountInvoice, self).invoice_validate()
-    
+
+    def formato_float(self, valor, redondeo):
+        return float('{:.6f}'.format(valor, precision_rounding=redondeo))
+
     def certificar_sv(self):
         for factura in self:
             if factura.requiere_certificacion_sv('infile_sv'):
@@ -38,13 +41,20 @@ class AccountMove(models.Model):
                 if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': factura.amount_total }]
+                        #factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, .rounding) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
+
+                    receptor = {
+                        'nombre': factura.partner_id.name,
+                    }
+                    factura_json['documento']['receptor'] = receptor
 
                 if tipo_documento in ['03', '04']:
                     incluir_impuestos = False
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': factura.amount_total }]
+                        #factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, factura.currency_id.rounding) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
                     
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
@@ -77,16 +87,17 @@ class AccountMove(models.Model):
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
-                        'cantidad': float('{:.8f}'.format(linea.quantity)),
+                        'cantidad': float('{:.6f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        #'descuento': float('{:.8f}'.format(precio_unitario * linea.quantity * linea.discount / 100.0)),
-                        'descuento': tools.float_round(precio_unitario * linea.quantity * linea.discount / 100.0, precision_rounding=factura.currency_id.rounding),
+                        #'descuento': self.formato_float(precio_unitario * linea.quantity * linea.discount / 100.0, factura.currency_id.rounding),
+                        'descuento': self.formato_float(precio_unitario * linea.quantity * linea.discount / 100.0, 4),
                         'descripcion': linea.name,
-                        #'precio_unitario': float('{:.8f}'.format(precio_unitario)),
-                        'precio_unitario': tools.float_round(precio_unitario, precision_rounding=factura.currency_id.rounding),
+                        #'precio_unitario': self.formato_float(precio_unitario, factura.currency_id.rounding),
+                        'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
                     if not incluir_impuestos:
-                        item['tributos'] = [{ 'codigo': '20', 'monto': impuestos }]
+                        #item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, factura.currency_id.rounding) }]
+                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
                         
                     items.append(item)
                 
