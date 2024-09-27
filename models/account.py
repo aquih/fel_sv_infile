@@ -206,10 +206,10 @@ class AccountInvoice(models.Model):
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    usuario_fel_sv = fields.Char('Usuario FEL')
-    llave_fel_sv = fields.Char('Clave FEL')
+    usuario_fel_sv = fields.Char('Usuario FEL SV')
+    llave_fel_sv = fields.Char('Clave FEL SV')
     certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
-    pruebas_fel_sv = fields.Boolean('Pruebas FEL')
+    pruebas_fel_sv = fields.Boolean('Pruebas FEL SV')
 
 class PosOrder(models.Model):
     _inherit = "pos.order"
