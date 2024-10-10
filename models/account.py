@@ -11,11 +11,15 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     pdf_fel_sv = fields.Char('PDF FEL SV', copy=False)
-    
-    def invoice_validate(self):
-        if self.certificar_sv():
-            return super(AccountInvoice, self).invoice_validate()
 
+    def _post(self, soft=True):
+        if self.certificar_sv():
+            return super(AccountMove, self)._post(soft)
+
+    def post(self):
+        if self.certificar_sv():
+            return super(AccountMove, self).post()
+    
     def formato_float(self, valor, redondeo):
         return float('{:.6f}'.format(valor, precision_rounding=redondeo))
 
@@ -42,7 +46,7 @@ class AccountMove(models.Model):
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
                         #factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, .rounding) }]
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_untaxed, 4) }]
 
                     receptor = {
                         'nombre': factura.partner_id.name,
@@ -204,7 +208,7 @@ class AccountMove(models.Model):
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    usuario_fel_sv = fields.Char('Usuario FEL')
-    llave_fel_sv = fields.Char('Clave FEL')
+    usuario_fel_sv = fields.Char('Usuario FEL SV')
+    llave_fel_sv = fields.Char('Clave FEL SV')
     certificador_fel_sv = fields.Selection(selection_add=[('infile_sv', 'Infile SV')])
-    pruebas_fel_sv = fields.Boolean('Pruebas FEL')
+    pruebas_fel_sv = fields.Boolean('Pruebas FEL SV')
