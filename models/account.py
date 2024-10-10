@@ -82,14 +82,14 @@ class AccountInvoice(models.Model):
                         precio_unitario = r['base']
 
                         # Para calcular los impuestos, es necesario quitar el descuento y tomar en cuenta todas las cantidades
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total / linea.quantity, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['base']
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': float('{:.6f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': self.formato_float(precio_unitario - linea.price_subtotal / linea.quantity, 4),
+                        'descuento': self.formato_float((precio_unitario * linea.quantity) - linea.price_subtotal, 4),
                         'descripcion': linea.name,
                         'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
