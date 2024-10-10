@@ -43,7 +43,7 @@ class AccountInvoice(models.Model):
                 if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_untaxed, 4) }]
 
                     receptor = {
                         'nombre': factura.partner_id.name,
