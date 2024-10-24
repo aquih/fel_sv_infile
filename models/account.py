@@ -49,15 +49,19 @@ class AccountMove(models.Model):
 
                     receptor = {
                         'nombre': factura.partner_id.name,
+                        'correo': factura.partner_id.email,
                     }
                     factura_json['documento']['receptor'] = receptor
 
-                if tipo_documento in ['03', '04']:
+                if tipo_documento in ['03', '04', '05', '06', '11']:
                     incluir_impuestos = False
+                    if tipo_documento in ['11']:
+                        incluir_impuestos = True
+
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
-                    
+
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
                         'numero_documento': factura.partner_id.vat,
@@ -75,17 +79,28 @@ class AccountMove(models.Model):
                     }
                     factura_json['documento']['receptor'] = receptor
 
+                    if tipo_documento in ['11']:
+                        factura_json['documento']['tipo_item_exportacion'] = 2
+
+                    if tipo_documento in ['05', '06']:
+                        factura_json['documento']['documentos_relacionados'] = [{
+                            'tipo_documento': factura.factura_original_fel_sv_id.journal_id.tipo_documento_fel_sv.zfill(2),
+                            'tipo_generacion': 2,
+                            'numero_documento': factura.factura_original_fel_sv_id.firma_fel_sv,
+                            'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date),
+                        }]
+                    
                 items = [];
                 for linea in factura.invoice_line_ids:
                     precio_unitario = linea.price_unit
                     impuestos = 0
-                    if not incluir_impuestos and len(linea.invoice_line_tax_ids) > 0:
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                        precio_unitario = r['base']
+                    if not incluir_impuestos and len(linea.tax_ids) > 0:
+                        r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                        precio_unitario = r['total_excluded']
 
                         # Para calcular los impuestos, es necesario quitar el descuento y tomar en cuenta todas las cantidades
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                        impuestos = r['total_included'] - r['base']
+                        r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                        impuestos = r['total_included'] - r['total_excluded']
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
