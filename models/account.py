@@ -97,6 +97,16 @@ class AccountInvoice(models.Model):
                             'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date),
                         }]
 
+                    if tipo_documento in ['11']:
+                        factura_json['documento']['tipo_item_exportacion'] = 2
+                    if tipo_documento in ['05', '06']:
+                        factura_json['documento']['documentos_relacionados'] = [{
+                            'tipo_documento': factura.factura_original_fel_sv_id.journal_id.tipo_documento_fel_sv.zfill(2),
+                            'tipo_generacion': 2,
+                            'numero_documento': factura.factura_original_fel_sv_id.firma_fel_sv,
+                            'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date),
+                        }]
+
                 items = [];
                 for linea in factura.invoice_line_ids:
                     precio_unitario = linea.price_unit
