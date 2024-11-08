@@ -53,7 +53,7 @@ class AccountMove(models.Model):
                     }
                     factura_json['documento']['receptor'] = receptor
 
-                if tipo_documento in ['03', '04', '05', '06', '11']:
+                if tipo_documento in ['03', '04', '05', '06', '11', '14']:
                     incluir_impuestos = False
                     if tipo_documento in ['11']:
                         incluir_impuestos = True
@@ -77,10 +77,21 @@ class AccountMove(models.Model):
                         },
                         'telefono': factura.partner_id.phone,
                     }
-                    factura_json['documento']['receptor'] = receptor
+                    
+                    llave_receptor = 'receptor'
+                    if tipo_documento in ['14']:
+                        llave_receptor = 'sujeto_excluido'
+
+                    factura_json['documento'][llave_receptor] = receptor
 
                     if tipo_documento in ['11']:
                         factura_json['documento']['tipo_item_exportacion'] = 2
+                        factura_json['documento'][llave_receptor]['tipo_persona'] = 2
+                        factura_json['documento'][llave_receptor]['codigo_pais'] = factura.partner_id.country_id.codigo_fel_sv or ''
+                        factura_json['documento'][llave_receptor]['descripcion_actividad'] = factura.partner_id.descripcion_actividad_fel_sv or ''
+                        factura_json['documento'][llave_receptor]['complemento'] = factura.partner_id.street or ''
+                        del factura_json['documento'][llave_receptor]['direccion']
+                        
 
                     if tipo_documento in ['05', '06']:
                         factura_json['documento']['documentos_relacionados'] = [{
@@ -97,9 +108,6 @@ class AccountMove(models.Model):
                     if not incluir_impuestos and len(linea.tax_ids) > 0:
                         r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         precio_unitario = r['total_excluded']
-
-                        # Para calcular los impuestos, es necesario quitar el descuento y tomar en cuenta todas las cantidades
-                        r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['total_excluded']
                            
                     item = {
@@ -110,8 +118,11 @@ class AccountMove(models.Model):
                         'descripcion': linea.name,
                         'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
+
+                    if tipo_documento in ['05', '06']:
+                        item['numero_documento'] = factura.factura_original_fel_sv_id.firma_fel_sv
                     if not incluir_impuestos:
-                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
+                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos * linea.quantity, 4) }]
                         
                     items.append(item)
                 
@@ -175,7 +186,7 @@ class AccountMove(models.Model):
                     receptor = {
                         'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
                         'numero_documento': factura.partner_id.vat,
-                        'nrc': factura.partner_id.numero_registro,
+                        'nrc': factura.partner_id.numero_registro or '',
                         'nombre': factura.partner_id.name,
                         'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
                         'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
