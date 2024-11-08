@@ -116,7 +116,8 @@ class AccountInvoice(models.Model):
                         r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         precio_unitario = r['total_excluded']
 
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
+                        # Para calcular los impuestos, se debe quitar el descuento (price_total)
+                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         logging.warning(r)
                         impuestos = r['total_included'] - r['total_excluded']
                            
