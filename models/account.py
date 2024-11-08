@@ -133,7 +133,7 @@ class AccountInvoice(models.Model):
                     if tipo_documento in ['05', '06']:
                         item['numero_documento'] = factura.factura_original_fel_sv_id.firma_fel_sv
                     if not incluir_impuestos:
-                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos * linea.quantity, 4) }]
+                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
                         
                     items.append(item)
                 
