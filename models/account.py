@@ -106,8 +106,12 @@ class AccountMove(models.Model):
                     precio_unitario = linea.price_unit
                     impuestos = 0
                     if not incluir_impuestos and len(linea.tax_ids) > 0:
+                        # El precio unitario no debe llevar IVA
                         r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         precio_unitario = r['total_excluded']
+
+                        # Para calcular los impuestos, se debe quitar el descuento (price_total)
+                        r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['total_excluded']
                            
                     item = {
