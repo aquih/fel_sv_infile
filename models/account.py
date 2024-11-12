@@ -45,7 +45,7 @@ class AccountMove(models.Model):
                 if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_untaxed, 4) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
 
                     receptor = {
                         'nombre': factura.partner_id.name,
@@ -103,22 +103,24 @@ class AccountMove(models.Model):
                     
                 items = [];
                 for linea in factura.invoice_line_ids:
-                    precio_unitario = linea.price_unit
+                    precio_unitario = 0
                     impuestos = 0
-                    if not incluir_impuestos and len(linea.tax_ids) > 0:
+                    if len(linea.tax_ids) > 0:
                         # El precio unitario no debe llevar IVA
                         r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         precio_unitario = r['total_excluded']
+                        if incluir_impuestos:
+                            precio_unitario = r['total_included']
 
-                        # Para calcular los impuestos, se debe quitar el descuento (price_total)
-                        r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                        # Para calcular los impuestos, se debe quitar el descuento (price_subtotal)
+                        r = linea.tax_ids.compute_all(linea.price_subtotal, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                         impuestos = r['total_included'] - r['total_excluded']
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': float('{:.6f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': self.formato_float((precio_unitario * linea.quantity) - linea.price_subtotal, 4),
+                        'descuento': self.formato_float((precio_unitario * linea.quantity) * (linea.discount / 100), 4),
                         'descripcion': linea.name,
                         'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
