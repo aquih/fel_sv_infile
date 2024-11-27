@@ -43,7 +43,7 @@ class AccountInvoice(models.Model):
                 if tipo_documento == '01':
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
-                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_untaxed, 4) }]
+                        factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
 
                     receptor = {
                         'nombre': factura.partner_id.name,
@@ -53,7 +53,7 @@ class AccountInvoice(models.Model):
 
                 if tipo_documento in ['03', '04', '05', '06', '11', '14']:
                     incluir_impuestos = False
-                    if tipo_documento in ['11']:
+                    if tipo_documento in ['11', '14']:
                         incluir_impuestos = True
 
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
@@ -107,19 +107,20 @@ class AccountInvoice(models.Model):
                             'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date),
                         }]
 
+                retenciones = 0
                 items = [];
                 for linea in factura.invoice_line_ids:
-                    precio_unitario = linea.price_unit
-                    impuestos = 0
-                    if not incluir_impuestos and len(linea.invoice_line_tax_ids) > 0:
-                        # El precio unitario no debe llevar IVA
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                        precio_unitario = r['total_excluded']
+                    # El precio unitario no debe llevar IVA
+                    r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                    precio_unitario = r['total_excluded']
 
-                        # Para calcular los impuestos, se debe quitar el descuento (price_total)
-                        r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                        logging.warning(r)
-                        impuestos = r['total_included'] - r['total_excluded']
+                    # Para calcular los impuestos, se debe quitar el descuento (price_total)
+                    r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                    impuestos = sum([t['amount'] for t in r['taxes'] if t['amount'] > 0])
+                    if incluir_impuestos:
+                        precio_unitario += impuestos / linea.quantity
+                    if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
+                        retenciones += r['total_excluded'] - r['total_included']
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
@@ -129,6 +130,8 @@ class AccountInvoice(models.Model):
                         'descripcion': linea.name,
                         'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
+                    if impuestos == 0:
+                        item['tipo_venta'] = '3'
 
                     if tipo_documento in ['05', '06']:
                         item['numero_documento'] = factura.factura_original_fel_sv_id.firma_fel_sv
@@ -137,7 +140,12 @@ class AccountInvoice(models.Model):
                         
                     items.append(item)
                 
+                if retenciones != 0:
+                    factura_json['documento']['retener_iva'] = True
+                    if tipo_documento in ['14']:
+                        factura_json['documento']['renta_retenida'] = self.formato_float(retenciones, 4)
                 factura_json['documento']['items'] = items
+
                 logging.warning(json.dumps(factura_json))                
 
                 headers = {
@@ -169,12 +177,11 @@ class AccountInvoice(models.Model):
         for factura in self:
             if factura.requiere_certificacion_sv('infile_sv') and factura.firma_fel_sv:
                                     
-                invalidacion_json = { 'documento': {
+                invalidacion_json = { 'invalidacion': {
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
-                    'uuid': factura.journal_id.firma_fel_sv,
-                    'tipo_anulacion': factura.tipo_anulacion_fel_sv,
+                    'uuid': factura.firma_fel_sv,
+                    'tipo_anulacion': int(factura.tipo_anulacion_fel_sv),
                     'motivo': factura.motivo_fel_sv,
-                    'nuevo_documento': factura.factura_nueva_fel_sv_id.firma_fel_sv,
                     'responsable': {
                         'nombre': factura.responsable_fel_sv_id.name,
                         'tipo_documento': factura.responsable_fel_sv_id.tipo_documento_fel_sv,
@@ -184,43 +191,11 @@ class AccountInvoice(models.Model):
                         'nombre': factura.solicitante_fel_sv_id.name,
                         'tipo_documento': factura.solicitante_fel_sv_id.tipo_documento_fel_sv,
                         'numero_documento': factura.solicitante_fel_sv_id.vat,
+                        'correo': factura.solicitante_fel_sv_id.email
                     }
                 }}
 
-                condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
-                
-                if tipo_documento == '01':
-                    invalidacion_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
-
-                if tipo_documento == '03':
-                    invalidacion_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
-                    receptor = {
-                        'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
-                        'numero_documento': factura.partner_id.vat,
-                        'nrc': factura.partner_id.numero_registro or '',
-                        'nombre': factura.partner_id.name,
-                        'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
-                        'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
-                        'direccion': {
-                            'departamento': factura.partner_id.departamento_fel_sv,
-                            'municipio': factura.partner_id.municipio_fel_sv,
-                            'complemento': factura.partner_id.street or '',
-                        }
-                    }
-                    invalidacion_json['documento']['receptor'] = receptor
-
-                items = [];
-                for linea in factura.invoice_line_ids:
-                    item = {
-                        'tipo': 1 if linea.product_id.type != 'service' else 2,
-                        'cantidad': linea.quantity,
-                        'unidad_medida': linea.product_id.codigo_unidad_medida_fel_sv or 59,
-                        'descuento': linea.price_total * linea.discount / 100.0,
-                        'descripcion': linea.name,
-                        'precio_unitario': linea.price_unit,
-                    }
-                
-                logging.warning(invalidacion_json)                
+                logging.warning(json.dumps(invalidacion_json))
 
                 headers = {
                     "Content-Type": "application/json",
@@ -235,7 +210,7 @@ class AccountInvoice(models.Model):
                 logging.warning(r.text)
                 certificacion_json = r.json()
                 if not certificacion_json["ok"]:
-                    raise UserError(str(certificacion_json["descripcion_errores"]))
+                    raise UserError(str(certificacion_json["mensaje"]))
 
 class ResCompany(models.Model):
     _inherit = "res.company"
