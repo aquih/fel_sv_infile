@@ -113,12 +113,12 @@ class AccountInvoice(models.Model):
                     # El precio unitario no debe llevar IVA
                     r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                     precio_unitario = r['total_excluded']
+                    if incluir_impuestos:
+                        precio_unitario = r['total_included']
 
                     # Para calcular los impuestos, se debe quitar el descuento (price_total)
                     r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                     impuestos = sum([t['amount'] for t in r['taxes'] if t['amount'] > 0])
-                    if incluir_impuestos:
-                        precio_unitario += impuestos / linea.quantity
                     if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
                         retenciones += r['total_excluded'] - r['total_included']
                            
@@ -126,7 +126,7 @@ class AccountInvoice(models.Model):
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
                         'cantidad': float('{:.6f}'.format(linea.quantity)),
                         'unidad_medida': int(linea.product_id.codigo_unidad_medida_fel_sv) or 59,
-                        'descuento': self.formato_float((precio_unitario * linea.quantity) - linea.price_subtotal, 4),
+                        'descuento': self.formato_float((precio_unitario * linea.quantity) * linea.discount / 100, 4),
                         'descripcion': linea.name,
                         'precio_unitario': self.formato_float(precio_unitario, 4),
                     }
