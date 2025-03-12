@@ -38,6 +38,24 @@ class AccountMove(models.Model):
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
                 }}
 
+                receptor = {
+                    'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
+                    'numero_documento': factura.partner_id.vat,
+                    'nrc': factura.partner_id.numero_registro,
+                    'nombre': factura.partner_id.name,
+                    'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
+                    'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
+                    'correo': factura.partner_id.email,
+                    'telefono': factura.partner_id.phone,
+                }
+
+                if factura.partner_id.departamento_fel_sv:
+                    receptor['direccion'] = {
+                        'departamento': factura.partner_id.departamento_fel_sv,
+                        'municipio': factura.partner_id.municipio_fel_sv,
+                        'complemento': factura.partner_id.street or '',
+                    }
+
                 condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
                 
@@ -47,11 +65,7 @@ class AccountMove(models.Model):
                     if condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
 
-                    receptor = {
-                        'nombre': factura.partner_id.name,
-                        'correo': factura.partner_id.email,
-                    }
-                    factura_json['documento']['receptor'] = receptor
+                    factura_json['documento']['receptor'] = {k: v for k, v in receptor.items() if v}
 
                 if tipo_documento in ['03', '04', '05', '06', '11', '14']:
                     incluir_impuestos = False
@@ -61,28 +75,12 @@ class AccountMove(models.Model):
                     factura_json['documento']['condicion_pago'] = int(condicion_pago_fel_sv)
                     if condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
-
-                    receptor = {
-                        'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
-                        'numero_documento': factura.partner_id.vat,
-                        'nrc': factura.partner_id.numero_registro,
-                        'nombre': factura.partner_id.name,
-                        'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
-                        'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
-                        'correo': factura.partner_id.email,
-                        'direccion': {
-                            'departamento': factura.partner_id.departamento_fel_sv,
-                            'municipio': factura.partner_id.municipio_fel_sv,
-                            'complemento': factura.partner_id.street or '',
-                        },
-                        'telefono': factura.partner_id.phone,
-                    }
                     
                     llave_receptor = 'receptor'
                     if tipo_documento in ['14']:
                         llave_receptor = 'sujeto_excluido'
 
-                    factura_json['documento'][llave_receptor] = receptor
+                    factura_json['documento'][llave_receptor] = {k: v for k, v in receptor.items() if v}
 
                     if tipo_documento in ['11']:
                         factura_json['documento']['tipo_item_exportacion'] = 2
