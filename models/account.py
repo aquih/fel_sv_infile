@@ -88,7 +88,8 @@ class AccountMove(models.Model):
                         factura_json['documento'][llave_receptor]['codigo_pais'] = factura.partner_id.country_id.codigo_fel_sv or ''
                         factura_json['documento'][llave_receptor]['descripcion_actividad'] = factura.partner_id.descripcion_actividad_fel_sv or ''
                         factura_json['documento'][llave_receptor]['complemento'] = factura.partner_id.street or ''
-                        del factura_json['documento'][llave_receptor]['direccion']
+                        if 'direccion' in factura_json['documento'][llave_receptor]:
+                            del factura_json['documento'][llave_receptor]['direccion']
                         
                     if tipo_documento in ['05', '06']:
                         factura_json['documento']['documentos_relacionados'] = [{
