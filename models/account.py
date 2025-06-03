@@ -102,6 +102,8 @@ class AccountMove(models.Model):
                 retenciones = 0
                 items = [];
                 for linea in factura.invoice_line_ids:
+                    iva_retenido = 0
+                    
                     # El precio unitario no debe llevar IVA
                     r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                     precio_unitario = r['total_excluded']
@@ -113,6 +115,7 @@ class AccountMove(models.Model):
                     impuestos = sum([t['amount'] for t in r['taxes'] if t['amount'] > 0])
                     if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
                         retenciones += r['total_excluded'] - r['total_included']
+                        iva_retenido = abs(sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]))
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
@@ -127,8 +130,11 @@ class AccountMove(models.Model):
 
                     if tipo_documento in ['05', '06']:
                         item['numero_documento'] = factura.factura_original_fel_sv_id.firma_fel_sv
+                    
                     if not incluir_impuestos:
                         item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
+                    elif incluir_impuestos and iva_retenido != 0:
+                        item['precio_unitario'] = self.formato_float(precio_unitario + iva_retenido, 4)
                         
                     items.append(item)
                 
