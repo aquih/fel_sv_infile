@@ -36,6 +36,7 @@ class AccountMove(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
+                    'fecha_emision ': factura.invoice_date,
                 }}
 
                 receptor = {
