@@ -15,10 +15,6 @@ class AccountMove(models.Model):
     def _post(self, soft=True):
         if self.certificar_sv():
             return super(AccountMove, self)._post(soft)
-
-    def post(self):
-        if self.certificar_sv():
-            return super(AccountMove, self).post()
     
     def formato_float(self, valor, redondeo):
         return float('{:.6f}'.format(tools.float_round(valor, precision_digits=redondeo)))
