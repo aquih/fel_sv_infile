@@ -32,6 +32,8 @@ class AccountMove(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
+                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d'),
+                    'hora_emision': '12:00:00',
                 }}
 
                 receptor = {
@@ -92,7 +94,7 @@ class AccountMove(models.Model):
                             'tipo_documento': factura.factura_original_fel_sv_id.journal_id.tipo_documento_fel_sv.zfill(2),
                             'tipo_generacion': 2,
                             'numero_documento': factura.factura_original_fel_sv_id.firma_fel_sv,
-                            'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date),
+                            'fecha_emision': str(factura.factura_original_fel_sv_id.invoice_date.strftime('%Y-%m-%d')),
                         }]
                     
                 retenciones = 0
