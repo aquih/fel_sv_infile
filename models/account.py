@@ -208,6 +208,8 @@ class AccountMove(models.Model):
                 if not certificacion_json["ok"]:
                     raise UserError(str(certificacion_json["errores"]))
 
+        return result
+
 class ResCompany(models.Model):
     _inherit = "res.company"
 
