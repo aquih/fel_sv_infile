@@ -155,7 +155,7 @@ class AccountInvoice(models.Model):
                     "identificador": factura.journal_id.code+str(factura.id),
                 }
                 logging.warning(headers)
-                url = 'https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar' 
+                url = 'https://certificador.infile.com.sv/api/v1/certificacion/prod/documento/certificar' 
                 if factura.company_id.pruebas_fel_sv:
                     url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar'
                 r = requests.post(url, json=factura_json, headers=headers)
@@ -202,7 +202,7 @@ class AccountInvoice(models.Model):
                     "usuario": factura.company_id.usuario_fel_sv,
                     "llave": factura.company_id.llave_fel_sv,
                 }
-                url = 'https://sandbox-certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion'
+                url = 'https://certificador.infile.com.sv/api/v1/certificacion/prod/documento/invalidacion'
                 if factura.company_id.pruebas_fel_sv:
                     url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion'
                 r = requests.post(url, json=invalidacion_json, headers=headers)
