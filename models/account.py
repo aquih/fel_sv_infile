@@ -211,6 +211,8 @@ class AccountInvoice(models.Model):
                 certificacion_json = r.json()
                 if not certificacion_json["ok"]:
                     raise UserError(str(certificacion_json["mensaje"]))
+        
+        return result
 
 class ResCompany(models.Model):
     _inherit = "res.company"
