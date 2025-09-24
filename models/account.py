@@ -210,7 +210,7 @@ class AccountInvoice(models.Model):
                 logging.warning(r.text)
                 certificacion_json = r.json()
                 if not certificacion_json["ok"]:
-                    raise UserError(str(certificacion_json["mensaje"]))
+                    raise UserError(str(certificacion_json["errores"]))
         
         return result
 
