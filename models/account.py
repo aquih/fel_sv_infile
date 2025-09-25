@@ -34,7 +34,27 @@ class AccountInvoice(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
+                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d'),
+                    'hora_emision': '12:00:00',
                 }}
+
+                receptor = {
+                    'tipo_documento': factura.partner_id.tipo_documento_fel_sv,
+                    'numero_documento': factura.partner_id.vat,
+                    'nrc': factura.partner_id.numero_registro,
+                    'nombre': factura.partner_id.name,
+                    'codigo_actividad': factura.partner_id.giro_negocio_id.codigo,
+                    'nombre_comercial': factura.partner_id.nombre_comercial_fel_sv,
+                    'correo': factura.partner_id.email,
+                    'telefono': factura.partner_id.phone,
+                }
+
+                if factura.partner_id.departamento_fel_sv:
+                    receptor['direccion'] = {
+                        'departamento': factura.partner_id.departamento_fel_sv,
+                        'municipio': factura.partner_id.municipio_fel_sv,
+                        'complemento': factura.partner_id.street or '',
+                    }
 
                 condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
@@ -45,11 +65,7 @@ class AccountInvoice(models.Model):
                     if condicion_pago_fel_sv == '1':
                         factura_json['documento']['pagos'] = [{ 'tipo': forma_pago_fel_sv, 'monto': self.formato_float(factura.amount_total, 4) }]
 
-                    receptor = {
-                        'nombre': factura.partner_id.name,
-                        'correo': factura.partner_id.email,
-                    }
-                    factura_json['documento']['receptor'] = receptor
+                    factura_json['documento']['receptor'] = {k: v for k, v in receptor.items() if v}
 
                 if tipo_documento in ['03', '04', '05', '06', '11', '14']:
                     incluir_impuestos = False
@@ -87,18 +103,9 @@ class AccountInvoice(models.Model):
                         factura_json['documento'][llave_receptor]['codigo_pais'] = factura.partner_id.country_id.codigo_fel_sv or ''
                         factura_json['documento'][llave_receptor]['descripcion_actividad'] = factura.partner_id.descripcion_actividad_fel_sv or ''
                         factura_json['documento'][llave_receptor]['complemento'] = factura.partner_id.street or ''
-                        del factura_json['documento'][llave_receptor]['direccion']
+                        if 'direccion' in factura_json['documento'][llave_receptor]:
+                            del factura_json['documento'][llave_receptor]['direccion']
 
-                    if tipo_documento in ['05', '06']:
-                        factura_json['documento']['documentos_relacionados'] = [{
-                            'tipo_documento': factura.factura_original_fel_sv_id.journal_id.tipo_documento_fel_sv.zfill(2),
-                            'tipo_generacion': 2,
-                            'numero_documento': factura.factura_original_fel_sv_id.firma_fel_sv,
-                            'fecha_emision': str(factura.factura_original_fel_sv_id.date_invoice),
-                        }]
-
-                    if tipo_documento in ['11']:
-                        factura_json['documento']['tipo_item_exportacion'] = 2
                     if tipo_documento in ['05', '06']:
                         factura_json['documento']['documentos_relacionados'] = [{
                             'tipo_documento': factura.factura_original_fel_sv_id.journal_id.tipo_documento_fel_sv.zfill(2),
