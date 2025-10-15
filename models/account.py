@@ -34,7 +34,7 @@ class AccountInvoice(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
-                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d'),
+                    'fecha_emision': factura.date_invoice.strftime('%Y-%m-%d'),
                     'hora_emision': '12:00:00',
                 }}
 
