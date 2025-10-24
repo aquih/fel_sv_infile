@@ -34,7 +34,7 @@ class AccountInvoice(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
-                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d'),
+                    'fecha_emision': factura.date_invoice.strftime('%Y-%m-%d'),
                     'hora_emision': '12:00:00',
                 }}
 
@@ -118,10 +118,11 @@ class AccountInvoice(models.Model):
                 items = [];
                 for linea in factura.invoice_line_ids:
                     # El precio unitario no debe llevar IVA
-                    r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                    precio_unitario = r['total_excluded']
+                    r = linea.invoice_line_tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
+                    precio_total = r['total_excluded']
                     if incluir_impuestos:
-                        precio_unitario = r['total_included']
+                        precio_total = r['total_included']
+                    precio_unitario = precio_total / linea.quantity
 
                     # Para calcular los impuestos, se debe quitar el descuento (price_total)
                     r = linea.invoice_line_tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
