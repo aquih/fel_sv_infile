@@ -2,7 +2,7 @@
 
 {
     'name': 'FEL El Salvador Infile',
-    'version': '1.1',
+    'version': '1.2',
     'category': 'Custom',
     'description': """ Integración con factura electrónica de Infile """,
     'author': 'aquíH',

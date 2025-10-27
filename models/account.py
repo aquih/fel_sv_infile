@@ -107,10 +107,11 @@ class AccountMove(models.Model):
                     iva_retenido = 0
                     
                     # El precio unitario no debe llevar IVA
-                    r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
-                    precio_unitario = r['total_excluded']
+                    r = linea.tax_ids.compute_all(linea.price_unit, currency=factura.currency_id, quantity=linea.quantity, product=linea.product_id, partner=factura.partner_id)
+                    precio_total = r['total_excluded']
                     if incluir_impuestos:
-                        precio_unitario = r['total_included']
+                        precio_total = r['total_included']
+                    precio_unitario = precio_total / linea.quantity
 
                     # Para calcular los impuestos, se debe quitar el descuento (price_subtotal)
                     r = linea.tax_ids.compute_all(linea.price_subtotal, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
