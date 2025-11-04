@@ -137,7 +137,7 @@ class AccountMove(models.Model):
                     if not incluir_impuestos:
                         item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
                     elif incluir_impuestos and iva_retenido != 0:
-                        item['precio_unitario'] = self.formato_float(precio_unitario + iva_retenido, 4)
+                        item['precio_unitario'] = self.formato_float(precio_unitario + ( iva_retenido / linea.quantity ), 4)
                         
                     items.append(item)
                 
