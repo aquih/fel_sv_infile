@@ -104,6 +104,9 @@ class AccountMove(models.Model):
                 retenciones = 0
                 items = [];
                 for linea in factura.invoice_line_ids:
+                    if factura.currency_id.is_zero(linea.price_total) and not factura.journal_id.enviar_lineas_en_cero_fel_sv:
+                        continue
+
                     iva_retenido = 0
                     
                     # El precio unitario no debe llevar IVA
@@ -135,7 +138,8 @@ class AccountMove(models.Model):
                         item['numero_documento'] = factura.factura_original_fel_sv_id.firma_fel_sv
                     
                     if not incluir_impuestos:
-                        item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
+                        if not factura.currency_id.is_zero(linea.price_total):
+                            item['tributos'] = [{ 'codigo': '20', 'monto': self.formato_float(impuestos, 4) }]
                     elif incluir_impuestos and iva_retenido != 0:
                         item['precio_unitario'] = self.formato_float(precio_unitario + ( iva_retenido / linea.quantity ), 4)
                         
