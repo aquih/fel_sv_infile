@@ -146,7 +146,6 @@ class AccountMove(models.Model):
                     items.append(item)
                 
                 if retenciones != 0:
-                    factura_json['documento']['retener_iva'] = True
                     if tipo_documento in ['14']:
                         factura_json['documento']['renta_retenida'] = self.formato_float(retenciones, 4)
                 factura_json['documento']['items'] = items
