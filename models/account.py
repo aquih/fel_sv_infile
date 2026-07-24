@@ -54,6 +54,14 @@ class AccountMove(models.Model):
                         'complemento': factura.partner_id.street or '',
                     }
 
+                # Pueden existir diferencias entre lo impreso y lo que tiene Odoo.
+                # Esto se da por pérdida de precisión al tener una impresión con dos
+                # decimales de aproximación. Estos dos campos obligan a imprimir el valor
+                # que tiene Odoo.
+                if tipo_documento in ['01', '03']:
+                    factura_json['total_pagar'] = factura.amount_total
+                    factura_json['monto_total_operacion'] = factura.amount_total
+
                 condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
                 
