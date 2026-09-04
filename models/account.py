@@ -152,6 +152,8 @@ class AccountMove(models.Model):
                 if retenciones != 0:
                     if tipo_documento in ['14']:
                         factura_json['documento']['renta_retenida'] = self.formato_float(retenciones, 4)
+                    else if tipo_documento in ['03']
+                        factura_json['documento']['retener_iva'] = True
                 factura_json['documento']['items'] = items
 
                 logging.warning(json.dumps(factura_json))                
