@@ -120,8 +120,8 @@ class AccountMove(models.Model):
                         precio_total = r['total_included']
                     precio_unitario = precio_total / linea.quantity
 
-                    # Para calcular los impuestos, se debe quitar el descuento (price_subtotal)
-                    r = linea.tax_ids.compute_all(linea.price_subtotal, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                    # Para calcular los impuestos, se debe quitar el descuento (price_total)
+                    r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                     impuestos = sum([t['amount'] for t in r['taxes'] if t['amount'] > 0])
                     if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
                         retenciones += r['total_excluded'] - r['total_included']
