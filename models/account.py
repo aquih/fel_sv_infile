@@ -33,7 +33,7 @@ class AccountMove(models.Model):
                 factura_json = { 'documento': {
                     'tipo_dte': tipo_documento,
                     'establecimiento': factura.journal_id.codigo_establecimiento_sv,
-                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d'),
+                    'fecha_emision': factura.invoice_date.strftime('%Y-%m-%d') if factura.invoice_date else fields.Date.today().strftime('%Y-%m-%d'),
                     'hora_emision': '12:00:00',
                 }}
 
@@ -122,7 +122,8 @@ class AccountMove(models.Model):
                     precio_unitario = precio_total / linea.quantity
 
                     # Para calcular los impuestos, se debe quitar el descuento (price_total)
-                    r = linea.tax_ids.compute_all(linea.price_total, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
+                    precio_total_sin_descuento = linea.price_unit * linea.quantity * (100 - linea.discount) / 100
+                    r = linea.tax_ids.compute_all(precio_total_sin_descuento, currency=factura.currency_id, quantity=1, product=linea.product_id, partner=factura.partner_id)
                     impuestos = sum([t['amount'] for t in r['taxes'] if t['amount'] > 0])
                     if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
                         retenciones += r['total_excluded'] - r['total_included']
