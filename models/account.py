@@ -6,6 +6,7 @@ from odoo.exceptions import UserError, ValidationError
 import requests
 import logging
 import json
+import base64
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -176,6 +177,8 @@ class AccountMove(models.Model):
                     factura.firma_fel_sv = certificacion_json["respuesta"]["codigoGeneracion"]
                     factura.pdf_fel_sv = certificacion_json["pdf_path"]
                     factura.certificador_fel_sv = "infile_sv"
+                    factura.documento_xml_fel_sv = base64.b64encode(json.dumps(factura_json).encode())
+                    factura.resultado_xml_fel_sv = base64.b64encode(json.dumps(certificacion_json["json"]).encode())
                 else:
                     factura.error_certificador_sv(str(certificacion_json["errores"]))
                     return False
