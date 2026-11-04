@@ -61,8 +61,8 @@ class AccountMove(models.Model):
                 # decimales de aproximación. Estos dos campos obligan a imprimir el valor
                 # que tiene Odoo.
                 if tipo_documento in ['01', '03']:
-                    factura_json['total_pagar'] = factura.amount_total
-                    factura_json['monto_total_operacion'] = factura.amount_total
+                    factura_json['documento']['total_pagar'] = factura.amount_total
+                    factura_json['documento']['monto_total_operacion'] = factura.amount_total
 
                 condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
@@ -168,7 +168,7 @@ class AccountMove(models.Model):
                     "Content-Type": "application/json",
                     "usuario": factura.company_id.usuario_fel_sv,
                     "llave": factura.company_id.llave_fel_sv,
-                    "identificador": factura.journal_id.code+str(factura.id),
+                    "identificador": factura.journal_id.code+'-'+str(factura.id),
                 }
                 logging.warning(headers)
                 url = 'https://certificador.infile.com.sv/api/v2/certificacion/prod/documento/certificar' 
