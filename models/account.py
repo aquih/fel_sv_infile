@@ -53,6 +53,7 @@ class AccountMove(models.Model):
                         'departamento': factura.partner_id.departamento_fel_sv,
                         'municipio': factura.partner_id.municipio_fel_sv,
                         'complemento': factura.partner_id.street or '',
+                        'distrito': factura.partner_id.distrito_fel_sv,
                     }
 
                 # Pueden existir diferencias entre lo impreso y lo que tiene Odoo.
@@ -157,6 +158,9 @@ class AccountMove(models.Model):
                     elif tipo_documento in ['01', '03']:
                         factura_json['documento']['retener_iva'] = True
                 factura_json['documento']['items'] = items
+                
+                if factura.narration:
+                    factura_json['documento']['observaciones'] = factura.narration.striptags()
 
                 logging.warning(json.dumps(factura_json))                
 
@@ -167,9 +171,9 @@ class AccountMove(models.Model):
                     "identificador": factura.journal_id.code+str(factura.id),
                 }
                 logging.warning(headers)
-                url = 'https://certificador.infile.com.sv/api/v1/certificacion/prod/documento/certificar' 
+                url = 'https://certificador.infile.com.sv/api/v2/certificacion/prod/documento/certificar' 
                 if factura.company_id.pruebas_fel_sv:
-                    url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/certificar'
+                    url = 'https://certificador.infile.com.sv/api/v2/certificacion/test/documento/certificar'
                 r = requests.post(url, json=factura_json, headers=headers)
 
                 logging.warning(r.text)
@@ -216,9 +220,9 @@ class AccountMove(models.Model):
                     "usuario": factura.company_id.usuario_fel_sv,
                     "llave": factura.company_id.llave_fel_sv,
                 }
-                url = 'https://certificador.infile.com.sv/api/v1/certificacion/prod/documento/invalidacion'
+                url = 'https://certificador.infile.com.sv/api/v2/certificacion/prod/documento/invalidacion'
                 if factura.company_id.pruebas_fel_sv:
-                    url = 'https://certificador.infile.com.sv/api/v1/certificacion/test/documento/invalidacion'
+                    url = 'https://certificador.infile.com.sv/api/v2/certificacion/test/documento/invalidacion'
                 r = requests.post(url, json=invalidacion_json, headers=headers)
 
                 logging.warning(r.text)
