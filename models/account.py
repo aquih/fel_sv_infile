@@ -100,6 +100,7 @@ class AccountMove(models.Model):
                         }]
                     
                 retenciones = 0
+                iva_retenido_total = 0
                 items = [];
                 for linea in factura.invoice_line_ids:
                     if factura.currency_id.is_zero(linea.price_total) and not factura.journal_id.enviar_lineas_en_cero_fel_sv:
@@ -121,6 +122,7 @@ class AccountMove(models.Model):
                     if sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]):
                         retenciones += r['total_excluded'] - r['total_included']
                         iva_retenido = abs(sum([t['amount'] for t in r['taxes'] if t['amount'] < 0]))
+                        iva_retenido_total += iva_retenido
                            
                     item = {
                         'tipo': 1 if linea.product_id.type != 'service' else 2,
@@ -157,7 +159,7 @@ class AccountMove(models.Model):
                 # que tiene Odoo.
                 if tipo_documento in ['01', '03']:
                     factura_json['documento']['total_pagar'] = self.formato_float(factura.amount_total)
-                    factura_json['documento']['monto_total_operacion'] = self.formato_float(factura.amount_total + abs(retenciones))
+                    factura_json['documento']['monto_total_operacion'] = self.formato_float(factura.amount_total + iva_retenido_total)
 
                 
                 if factura.narration:
