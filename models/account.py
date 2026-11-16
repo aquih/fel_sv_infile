@@ -56,14 +56,6 @@ class AccountMove(models.Model):
                         'distrito': factura.partner_id.distrito_fel_sv,
                     }
 
-                # Pueden existir diferencias entre lo impreso y lo que tiene Odoo.
-                # Esto se da por pérdida de precisión al tener una impresión con dos
-                # decimales de aproximación. Estos dos campos obligan a imprimir el valor
-                # que tiene Odoo.
-                if tipo_documento in ['01', '03']:
-                    factura_json['documento']['total_pagar'] = factura.amount_total
-                    factura_json['documento']['monto_total_operacion'] = factura.amount_total
-
                 condicion_pago_fel_sv = factura.condicion_pago_fel_sv or factura.journal_id.condicion_pago_fel_sv
                 forma_pago_fel_sv = factura.forma_pago_fel_sv or factura.journal_id.forma_pago_fel_sv
                 
@@ -158,6 +150,15 @@ class AccountMove(models.Model):
                     elif tipo_documento in ['01', '03']:
                         factura_json['documento']['retener_iva'] = True
                 factura_json['documento']['items'] = items
+
+                # Pueden existir diferencias entre lo impreso y lo que tiene Odoo.
+                # Esto se da por pérdida de precisión al tener una impresión con dos
+                # decimales de aproximación. Estos dos campos obligan a imprimir el valor
+                # que tiene Odoo.
+                if tipo_documento in ['01', '03']:
+                    factura_json['documento']['total_pagar'] = factura.amount_total
+                    factura_json['documento']['monto_total_operacion'] = factura.amount_total + retenciones
+
                 
                 if factura.narration:
                     factura_json['documento']['observaciones'] = factura.narration.striptags()
