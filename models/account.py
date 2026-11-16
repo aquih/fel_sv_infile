@@ -158,8 +158,8 @@ class AccountMove(models.Model):
                 # decimales de aproximación. Estos dos campos obligan a imprimir el valor
                 # que tiene Odoo.
                 if tipo_documento in ['01', '03']:
-                    factura_json['documento']['total_pagar'] = self.formato_float(factura.amount_total)
-                    factura_json['documento']['monto_total_operacion'] = self.formato_float(factura.amount_total + iva_retenido_total)
+                    factura_json['documento']['total_pagar'] = self.formato_float(factura.amount_total, 4)
+                    factura_json['documento']['monto_total_operacion'] = self.formato_float(factura.amount_total + iva_retenido_total, 4)
 
                 
                 if factura.narration:
